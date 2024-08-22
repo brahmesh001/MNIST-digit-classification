@@ -1,0 +1,81 @@
+# Import necessary libraries
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import classification_report, confusion_matrix
+
+# Suppress TensorFlow warnings
+import warnings
+warnings.filterwarnings('ignore')
+
+# Load MNIST Dataset
+mnist = tf.keras.datasets.mnist
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Normalize the data
+x_train, x_test = x_train / 255.0, x_test / 255.0
+
+# Reshape the data for CNN input (adding a channel dimension)
+x_train = x_train.reshape(-1, 28, 28, 1)
+x_test = x_test.reshape(-1, 28, 28, 1)
+
+# Define the CNN Model for MNIST classification
+model = models.Sequential([
+    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Flatten(),
+    layers.Dense(64, activation='relu'),
+    layers.Dense(10, activation='softmax')
+])
+
+# Compile the model
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+# Train the model
+model.fit(x_train, y_train, epochs=5, validation_split=0.1)
+
+# Evaluate on the test set
+test_loss, test_acc = model.evaluate(x_test, y_test, verbose=2)
+print(f"\nTest accuracy: {test_acc:.4f}")
+
+# Make predictions on the test set
+y_pred = np.argmax(model.predict(x_test), axis=1)
+
+# Generate classification report
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+# Plot confusion matrix
+conf_matrix = confusion_matrix(y_test, y_pred)
+
+plt.figure(figsize=(10, 8))
+plt.imshow(conf_matrix, cmap='Blues')
+plt.title('Confusion Matrix')
+plt.colorbar()
+plt.xticks(np.arange(10), labels=range(10))
+plt.yticks(np.arange(10), labels=range(10))
+plt.xlabel('Predicted Label')
+plt.ylabel('True Label')
+
+# Add counts to the confusion matrix plot
+for i in range(10):
+    for j in range(10):
+        plt.text(j, i, conf_matrix[i, j], ha='center', va='center', color='black')
+
+plt.show()
+
+# Visualize predictions on test images
+def plot_predictions(images, true_labels, predictions, num_images=5):
+    plt.figure(figsize=(10, 5))
+    for i in range(num_images):
+        plt.subplot(1, num_images, i+1)
+        plt.imshow(images[i].reshape(28, 28), cmap='gray')
+        plt.title(f"True: {true_labels[i]}\nPredicted: {predictions[i]}")
+        plt.axis('off')
+    plt.show()
+
+# Display some test images with their predicted labels
+plot_predictions(x_test, y_test, y_pred, num_images=5)
